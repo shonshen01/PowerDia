@@ -10,10 +10,12 @@
 import { useEffect, useState } from 'react';
 import { usePgAdmin } from '../../PgAdminProvider';
 import { Badge, Box } from '@mui/material';
-import { RowFilterIcon, ViewDataIcon, ERDIcon } from '../../components/ExternalIcon';
+import { RowFilterIcon, ViewDataIcon, ERDIcon, AIIcon } from '../../components/ExternalIcon';
 import TerminalRoundedIcon from '@mui/icons-material/TerminalRounded';
 import SearchOutlinedIcon from '@mui/icons-material/SearchOutlined';
 import FilterAltRoundedIcon from '@mui/icons-material/FilterAltRounded';
+import Menu from '@mui/material/Menu';
+import MenuItem from '@mui/material/MenuItem';
 import { PgButtonGroup, PgIconButton } from '../../components/Buttons';
 import _ from 'lodash';
 import PropTypes from 'prop-types';
@@ -46,7 +48,11 @@ export default function ObjectExplorerToolbar() {
     view_filtered: true,
     search_objects: true,
     psql: true,
+    ai_report: true,   // mirrors: erd: true
   });
+
+  // AI dropdown anchor — mirrors ERD single-action with a 3-option menu
+  const [aiAnchorEl, setAiAnchorEl] = useState(null);
 
   const [menus, setMenus] = useState({
     search_objects: undefined,
@@ -79,6 +85,22 @@ export default function ObjectExplorerToolbar() {
     const searchObj = toolsMenus?.search_objects;
     const psql = toolsMenus?.psql;
 
+    // AI enable check — mirrors: erdModule.erdToolEnabled(d)
+    // Direct check: llmSystemEnabled + valid connected node type
+    // (Avoids calling security_report_enabled which also gates on llmEnabled/preferences)
+    const aiTools = pgAdmin.Browser.AITools;
+    const aiEnabled = (() => {
+      if (!aiTools?.llmSystemEnabled) return false;
+      if (!d || !i) return false;
+      if (!['server', 'database', 'schema'].includes(d._type)) return false;
+      try {
+        const info = pgAdmin.Browser.tree.getTreeNodeHierarchy(i);
+        if (!info?.server?.connected) return false;
+        if ((d._type === 'database' || d._type === 'schema') && !info?.database?.connected) return false;
+      } catch(e) { return false; }
+      return true;
+    })();
+
     const newDisabledState = {
       query_tool: !sqlEditor.queryToolMenuEnabled(d),
       erd: !erdModule.erdToolEnabled(d),
@@ -87,6 +109,7 @@ export default function ObjectExplorerToolbar() {
       view_filtered: !sqlEditor.viewMenuEnabled(d),
       search_objects: !isGenericEnabled(searchObj),
       psql: !isGenericEnabled(psql),
+      ai_report: !aiEnabled,   // mirrors: erd: !erdModule.erdToolEnabled(d)
     };
 
     setDisabledState((prev) => {
@@ -132,6 +155,19 @@ export default function ObjectExplorerToolbar() {
     const t = pgAdmin.Browser.tree;
     const i = t?.selected();
     ERDModule.getInstance().showErdTool(undefined, i);
+  };
+
+  // AI handler — mirrors handleERDTool but dispatches to 3 report callbacks
+  // Calls show_security_report / show_performance_report / show_design_report
+  // which are the same functions used by Tools → AI-Reports menu items
+  const handleAIReport = (reportType) => {
+    const t = pgAdmin.Browser.tree;
+    const i = t?.selected();
+    const aiTools = pgAdmin.Browser.AITools;
+    if (aiTools && typeof aiTools[`show_${reportType}_report`] === 'function') {
+      aiTools[`show_${reportType}_report`].call(aiTools, undefined, i);
+    }
+    setAiAnchorEl(null);
   };
 
   const handleViewAll = () => {
@@ -222,6 +258,32 @@ export default function ObjectExplorerToolbar() {
             onClick={() => handleGenericClick(menus.psql)}
           />
         )}
+
+        {/* AI Analysis dropdown — mirrors ERD ToolbarButton pattern */}
+        <>
+          <ToolbarButton
+            icon={<AIIcon />}
+            label={gettext('AI Analysis')}
+            isDisabled={disabledState.ai_report}
+            onClick={(e) => setAiAnchorEl(e.currentTarget)}
+            id="ai-analysis-btn"
+          />
+          <Menu
+            anchorEl={aiAnchorEl}
+            open={Boolean(aiAnchorEl)}
+            onClose={() => setAiAnchorEl(null)}
+          >
+            <MenuItem onClick={() => handleAIReport('security')}>
+              {gettext('Security Report')}
+            </MenuItem>
+            <MenuItem onClick={() => handleAIReport('performance')}>
+              {gettext('Performance Report')}
+            </MenuItem>
+            <MenuItem onClick={() => handleAIReport('design')}>
+              {gettext('Design Review')}
+            </MenuItem>
+          </Menu>
+        </>
       </PgButtonGroup>
     </Box>
   );

@@ -290,6 +290,11 @@ def get_default_provider():
     except Exception:
         pass
 
+    # Fall back to system configuration (mirrors get_ollama_api_url() pattern)
+    config_provider = getattr(config, 'DEFAULT_LLM_PROVIDER', '')
+    if config_provider and config_provider.strip() in valid_providers:
+        return config_provider.strip()
+
     # No valid provider configured
     return None
 

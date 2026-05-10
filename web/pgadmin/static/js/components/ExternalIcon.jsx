@@ -35,6 +35,7 @@ import GoogleCloud from '../../img/google-cloud-1.svg?svgr';
 import RowFilterSvg from '../../img/fonticon/row_filter.svg?svgr';
 import SvgIcon from '@mui/material/SvgIcon';
 import SchemaDiffSvg from '../../img/fonticon/compare.svg?svgr';
+import LightningSvg from '../../img/lightining.svg?svgr';
 
 export default function ExternalIcon({ Icon, ...props }) {
   return <SvgIcon component={Icon} inheritViewBox {...props} />;
@@ -121,3 +122,6 @@ SchemaDiffIcon.propTypes = { style: PropTypes.object };
 
 export const ERDIcon = ({ style }) => <ExternalIcon Icon={JoinSvg} style={{ height: '1.5rem', ...style }} data-label="ERDIcon" />;
 ERDIcon.propTypes = { style: PropTypes.object };
+
+export const AIIcon = ({ style }) => <ExternalIcon Icon={LightningSvg} style={{ height: '1.4rem', ...style }} data-label="AIIcon" />;
+AIIcon.propTypes = { style: PropTypes.object };
