@@ -98,7 +98,8 @@ def get_section_analysis_prompt(
     section_name: str,
     section_description: str,
     data: dict,
-    context: dict
+    context: dict,
+    rag_chunks: list = None
 ) -> str:
     """Build the section analysis user prompt.
 
@@ -107,6 +108,7 @@ def get_section_analysis_prompt(
         section_description: Description of what this section covers.
         data: Query results for this section.
         context: Database context.
+        rag_chunks: Optional list of research text chunks from RAG.
 
     Returns:
         Formatted user prompt for section analysis.
@@ -115,7 +117,7 @@ def get_section_analysis_prompt(
 
     data_json = json.dumps(data, indent=2, default=str)
 
-    return f"""Analyze the following {section_name} data for a PostgreSQL
+    prompt = f"""Analyze the following {section_name} data for a PostgreSQL
 {context.get('server_version', '')} server.
 
 Section focus: {section_description}
@@ -129,6 +131,17 @@ Data:
 ```
 
 Provide your analysis following the required format."""
+
+    if rag_chunks:
+        context_block = "\n\n".join(rag_chunks[:5])
+        prompt += f"""
+
+Relevant Research Context (use these facts to enrich your analysis):
+---
+{context_block}
+---"""
+
+    return prompt
 
 
 # =============================================================================
@@ -169,7 +182,8 @@ where helpful."""
 def get_synthesis_prompt(
     report_type: str,
     section_summaries: list[dict],
-    context: dict
+    context: dict,
+    rag_chunks: list = None
 ) -> str:
     """Build the synthesis stage user prompt.
 
@@ -177,6 +191,7 @@ def get_synthesis_prompt(
         report_type: Type of report being generated.
         section_summaries: List of section results with summaries.
         context: Database context.
+        rag_chunks: Optional list of research text chunks from RAG.
 
     Returns:
         Formatted user prompt for synthesis.
@@ -191,14 +206,15 @@ def get_synthesis_prompt(
     report_type_display = {
         'security': 'Security',
         'performance': 'Performance',
-        'design': 'Design Review'
+        'design': 'Design Review',
+        'metering': 'Grid Metering & Health Audit',
     }.get(report_type, report_type.title())
 
     scope_info = context.get('database_name', 'server')
     if context.get('schema_name'):
         scope_info = f"{context['schema_name']} schema in {scope_info}"
 
-    return f"""Create a comprehensive {report_type_display} Report for
+    prompt = f"""Create a comprehensive {report_type_display} Report for
 {scope_info}.
 
 Server: PostgreSQL {context.get('server_version', 'Unknown')}
@@ -211,6 +227,17 @@ Section Summaries:
 
 Combine these into a final report following the required format.
 Start with Executive Summary (do not add a title before it)."""
+
+    if rag_chunks:
+        context_block = "\n\n".join(rag_chunks[:5])
+        prompt += f"""
+
+Relevant Research Context (use these insights for the executive summary):
+---
+{context_block}
+---"""
+
+    return prompt
 
 
 # =============================================================================
@@ -247,4 +274,15 @@ Focus areas for design analysis:
 - Constraint completeness
 - Data type appropriateness
 - Naming conventions
+"""
+
+METERING_GUIDANCE = """
+Focus areas for PowerDia grid metering analysis:
+- Grid topology health: substation / feeder / transformer balance
+- Transformer overload: flag units with users_per_kva > 0.8 as at-risk
+- Consumption outliers: users consuming > 2 standard deviations above average
+- Feeder imbalance: feeders with disproportionate load vs transformer count
+- Unpaid readings: proportion of is_paid=false readings (revenue risk)
+- Spatial hotspots: geographic clusters of high consumption from PostGIS data
+- Data freshness: gap between earliest and latest reading_time
 """

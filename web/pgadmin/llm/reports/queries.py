@@ -927,6 +927,149 @@ QUERIES = {
         """,
         'scope': ['database'],
     },
+
+    # =========================================================================
+    # METERING QUERIES (PowerDia — powerwd database)
+    # Relationships:
+    #   end_users.transformer_id → network_distribution.node_id
+    #   network_distribution.type_id → ref_transformer_types.type_id
+    #   user_consumption.user_id → end_users.user_id
+    # =========================================================================
+
+    'metering_grid_topology': {
+        'sql': """
+            SELECT
+                COUNT(DISTINCT substation_name)   AS total_substations,
+                COUNT(DISTINCT feeder_id)         AS total_feeders,
+                COUNT(DISTINCT transformer_label) AS total_transformers,
+                COUNT(DISTINCT node_id)           AS total_nodes
+            FROM network_distribution
+        """,
+        'scope': ['database'],
+    },
+
+    'metering_end_user_count': {
+        'sql': """
+            SELECT
+                COUNT(*)                                    AS total_end_users,
+                COUNT(DISTINCT transformer_id)              AS transformers_with_users,
+                COUNT(DISTINCT phase)                       AS distinct_phases
+            FROM end_users
+        """,
+        'scope': ['database'],
+    },
+
+    'metering_transformer_load': {
+        'sql': """
+            SELECT
+                nd.transformer_label,
+                nd.substation_name,
+                nd.feeder_id,
+                rt.capacity_kva,
+                rt.description                              AS transformer_type,
+                COUNT(eu.user_id)                          AS connected_users,
+                ROUND(
+                    COUNT(eu.user_id)::numeric
+                    / NULLIF(rt.capacity_kva, 0), 3
+                )                                          AS users_per_kva
+            FROM network_distribution nd
+            LEFT JOIN ref_transformer_types rt
+                ON nd.type_id = rt.type_id
+            LEFT JOIN end_users eu
+                ON eu.transformer_id = nd.node_id
+            GROUP BY
+                nd.transformer_label, nd.substation_name,
+                nd.feeder_id, rt.capacity_kva, rt.description
+            ORDER BY users_per_kva DESC NULLS LAST
+            LIMIT 30
+        """,
+        'scope': ['database'],
+    },
+
+    'metering_consumption_summary': {
+        'sql': """
+            SELECT
+                MIN(curr_reading_kwh)                    AS min_kwh,
+                ROUND(AVG(curr_reading_kwh)::numeric, 2) AS avg_kwh,
+                MAX(curr_reading_kwh)                    AS max_kwh,
+                ROUND(STDDEV(curr_reading_kwh)::numeric, 2) AS stddev_kwh,
+                COUNT(*)                                 AS total_readings,
+                COUNT(DISTINCT user_id)                  AS metered_users,
+                SUM(CASE WHEN is_paid THEN 1 ELSE 0 END) AS paid_readings,
+                MIN(reading_time)                        AS earliest_reading,
+                MAX(reading_time)                        AS latest_reading
+            FROM user_consumption
+        """,
+        'scope': ['database'],
+    },
+
+    'metering_top_consumers': {
+        'sql': """
+            SELECT
+                eu.user_id,
+                eu.user_name,
+                eu.meter_number,
+                eu.phase,
+                nd.substation_name,
+                nd.feeder_id,
+                nd.transformer_label,
+                SUM(uc.curr_reading_kwh)  AS total_kwh,
+                COUNT(uc.reading_id)      AS reading_count,
+                MAX(uc.reading_time)      AS last_reading
+            FROM user_consumption uc
+            JOIN end_users eu
+                ON uc.user_id = eu.user_id
+            JOIN network_distribution nd
+                ON eu.transformer_id = nd.node_id
+            GROUP BY
+                eu.user_id, eu.user_name, eu.meter_number,
+                eu.phase, nd.substation_name, nd.feeder_id,
+                nd.transformer_label
+            ORDER BY total_kwh DESC
+            LIMIT 20
+        """,
+        'scope': ['database'],
+    },
+
+    'metering_feeder_consumption': {
+        'sql': """
+            SELECT
+                nd.feeder_id,
+                nd.substation_name,
+                COUNT(DISTINCT nd.node_id)           AS transformers_on_feeder,
+                COUNT(DISTINCT eu.user_id)           AS users_on_feeder,
+                COALESCE(SUM(uc.curr_reading_kwh), 0) AS total_kwh,
+                ROUND(
+                    COALESCE(AVG(uc.curr_reading_kwh), 0)::numeric, 2
+                )                                    AS avg_kwh_per_reading
+            FROM network_distribution nd
+            LEFT JOIN end_users eu
+                ON eu.transformer_id = nd.node_id
+            LEFT JOIN user_consumption uc
+                ON uc.user_id = eu.user_id
+            GROUP BY nd.feeder_id, nd.substation_name
+            ORDER BY total_kwh DESC
+        """,
+        'scope': ['database'],
+    },
+
+    'metering_spatial_density': {
+        'sql': """
+            SELECT
+                nd.substation_name,
+                COUNT(DISTINCT eu.user_id)               AS user_count,
+                COUNT(DISTINCT nd.node_id)               AS transformer_count,
+                ST_AsText(ST_Centroid(ST_Collect(nd.geom))) AS centroid,
+                ST_AsText(ST_Extent(nd.geom))            AS bounding_box
+            FROM network_distribution nd
+            LEFT JOIN end_users eu
+                ON eu.transformer_id = nd.node_id
+            WHERE nd.geom IS NOT NULL
+            GROUP BY nd.substation_name
+            ORDER BY user_count DESC
+        """,
+        'scope': ['database'],
+    },
 }
 
 

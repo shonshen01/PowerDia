@@ -163,6 +163,39 @@ define([
         });
       }
 
+      // =====================================================================
+      // Metering Reports — Database only (PowerDia powerwd tables)
+      // =====================================================================
+      menus.push({
+        name: 'ai_metering_report',
+        module: this,
+        applies: ['tools'],
+        callback: 'show_metering_report',
+        category: 'ai_tools',
+        priority: 4,
+        label: gettext('Metering'),
+        icon: 'fa fa-bolt',
+        enable: this.metering_report_enabled.bind(this),
+        data: {
+          data_disabled: gettext('Please select the powerwd database.'),
+        },
+        permission: AllPermissionTypes.TOOLS_AI,
+      });
+
+      menus.push({
+        name: 'ai_metering_report_context_database',
+        node: 'database',
+        module: this,
+        applies: ['context'],
+        callback: 'show_metering_report',
+        category: 'ai_tools',
+        priority: 103,
+        label: gettext('Metering'),
+        icon: 'fa fa-bolt',
+        enable: this.metering_report_enabled.bind(this),
+        permission: AllPermissionTypes.TOOLS_AI,
+      });
+
       pgBrowser.add_menus(menus);
     },
 
@@ -382,6 +415,54 @@ define([
     },
 
     // =====================================================================
+    // Metering Report Functions (PowerDia — powerwd database only)
+    // =====================================================================
+
+    metering_report_enabled: function(node, item, data) {
+      if (!this.checkLLMEnabled(data)) return false;
+
+      if (!node || !item) return false;
+
+      let tree = pgBrowser.tree;
+      let info = tree.getTreeNodeHierarchy(item);
+
+      if (!info || !info.server) {
+        if (data) {
+          data.data_disabled = gettext('Please select the powerwd database.');
+        }
+        return false;
+      }
+
+      if (!info.server.connected) {
+        if (data) {
+          data.data_disabled = gettext('Please connect to the server first.');
+        }
+        return false;
+      }
+
+      let nodeType = this.getNodeType(item);
+      if (nodeType !== 'database') {
+        if (data) {
+          data.data_disabled = gettext('Please select the powerwd database node.');
+        }
+        return false;
+      }
+
+      if (!info.database || !info.database.connected) {
+        if (data) {
+          data.data_disabled = gettext('Please connect to the database first.');
+        }
+        return false;
+      }
+
+      return true;
+    },
+
+    show_metering_report: function() {
+      this._showReport('metering', ['database']);
+    },
+
+    // =====================================================================
     // Common Report Display Function
     // =====================================================================
 
@@ -467,6 +548,9 @@ define([
         break;
       case 'design':
         categoryLabel = gettext('Design Review');
+        break;
+      case 'metering':
+        categoryLabel = gettext('Grid Metering Report');
         break;
       default:
         categoryLabel = gettext('Report');

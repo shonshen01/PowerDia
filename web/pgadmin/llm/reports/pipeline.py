@@ -50,7 +50,8 @@ class ReportPipeline:
         client: LLMClient,
         query_executor: Callable[[str, dict], dict],
         max_retries: int = 3,
-        retry_base_delay: float = 5.0
+        retry_base_delay: float = 5.0,
+        rag_retriever=None
     ):
         """Initialize the pipeline.
 
@@ -62,6 +63,7 @@ class ReportPipeline:
                            context.
             max_retries: Maximum retry attempts for rate-limited calls.
             retry_base_delay: Base delay in seconds for exponential backoff.
+            rag_retriever: Optional LlamaIndex retriever for RAG context.
         """
         self.report_type = report_type
         self.sections = {s.id: s for s in sections}
@@ -69,6 +71,7 @@ class ReportPipeline:
         self.query_executor = query_executor
         self.max_retries = max_retries
         self.retry_base_delay = retry_base_delay
+        self.rag_retriever = rag_retriever
 
     def execute(self, context: dict) -> str:
         """Execute the pipeline and return the final report.
@@ -282,8 +285,19 @@ class ReportPipeline:
         Yields:
             Retry events and final result event.
         """
+        rag_chunks = []
+        if self.rag_retriever:
+            try:
+                query = f"{section.name} {section.description}"
+                rag_chunks = [
+                    n.text for n in self.rag_retriever.retrieve(query)
+                ]
+            except Exception:
+                pass  # Gracefully degrade if RAG fails
+
         user_prompt = get_section_analysis_prompt(
-            section.name, section.description, data, context
+            section.name, section.description, data, context,
+            rag_chunks=rag_chunks
         )
 
         for attempt in range(self.max_retries):
@@ -363,8 +377,20 @@ class ReportPipeline:
             }
             return
 
+        rag_chunks = []
+        if self.rag_retriever:
+            try:
+                rag_chunks = [
+                    n.text for n in self.rag_retriever.retrieve(
+                        "grid metering sustainability analysis overview"
+                    )
+                ]
+            except Exception:
+                pass  # Gracefully degrade if RAG fails
+
         user_prompt = get_synthesis_prompt(
-            self.report_type, successful_results, context
+            self.report_type, successful_results, context,
+            rag_chunks=rag_chunks
         )
 
         for attempt in range(self.max_retries):

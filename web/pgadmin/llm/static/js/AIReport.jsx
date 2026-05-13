@@ -316,6 +316,19 @@ const REPORT_CONFIGS = {
     loadingMessage: () => gettext('Generating design review'),
     filePrefix: 'design-review',
   },
+  metering: {
+    endpoints: {
+      database: 'llm.database_metering_report',
+    },
+    streamEndpoints: {
+      database: 'llm.database_metering_report_stream',
+    },
+    titles: {
+      database: () => gettext('Grid Metering Report'),
+    },
+    loadingMessage: () => gettext('Generating grid metering report'),
+    filePrefix: 'metering-report',
+  },
 };
 
 // Stage display names

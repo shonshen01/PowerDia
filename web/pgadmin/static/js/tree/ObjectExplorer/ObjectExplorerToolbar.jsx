@@ -282,6 +282,9 @@ export default function ObjectExplorerToolbar() {
             <MenuItem onClick={() => handleAIReport('design')}>
               {gettext('Design Review')}
             </MenuItem>
+            <MenuItem onClick={() => handleAIReport('metering')}>
+              {gettext('Grid Metering')}
+            </MenuItem>
           </Menu>
         </>
       </PgButtonGroup>

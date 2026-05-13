@@ -11,6 +11,7 @@
 
 import json
 from typing import Generator, Optional, Any
+from urllib.parse import quote_plus
 
 from flask import Response, stream_with_context
 from flask_babel import gettext
@@ -19,6 +20,15 @@ from pgadmin.llm.client import get_llm_client, LLMClient
 from pgadmin.llm.reports.pipeline import ReportPipeline
 from pgadmin.llm.reports.sections import get_sections_for_scope
 from pgadmin.llm.reports.queries import QUERIES
+
+# RAG imports (lazy — only used when report_type == 'metering')
+try:
+    from llama_index.vector_stores.postgres import PGVectorStore
+    from llama_index.embeddings.ollama import OllamaEmbedding
+    from llama_index.core import VectorStoreIndex
+    _HAS_RAG = True
+except ImportError:
+    _HAS_RAG = False
 
 
 def create_query_executor(conn) -> callable:
@@ -128,11 +138,30 @@ def generate_report_streaming(
 
     # Create the pipeline
     query_executor = create_query_executor(conn)
+
+    # Build RAG retriever for metering reports
+    rag_retriever = None
+    if report_type == 'metering' and _HAS_RAG:
+        try:
+            vector_store = PGVectorStore.from_params(
+                database="powerwd", host="localhost",
+                port="5432", user="grid_master", password=quote_plus("109111"),
+                table_name="metering_knowledge", embed_dim=768
+            )
+            embed_model = OllamaEmbedding(model_name="nomic-embed-text")
+            index = VectorStoreIndex.from_vector_store(
+                vector_store, embed_model=embed_model
+            )
+            rag_retriever = index.as_retriever(similarity_top_k=5)
+        except Exception:
+            pass  # Gracefully fall back to non-RAG
+
     pipeline = ReportPipeline(
         report_type=report_type,
         sections=sections,
         client=client,
-        query_executor=query_executor
+        query_executor=query_executor,
+        rag_retriever=rag_retriever
     )
 
     # Execute pipeline and stream events
@@ -198,11 +227,30 @@ def generate_report_sync(
 
     # Create and execute the pipeline
     query_executor = create_query_executor(conn)
+
+    # Build RAG retriever for metering reports
+    rag_retriever = None
+    if report_type == 'metering' and _HAS_RAG:
+        try:
+            vector_store = PGVectorStore.from_params(
+                database="powerwd", host="localhost",
+                port="5432", user="grid_master", password=quote_plus("109111"),
+                table_name="metering_knowledge", embed_dim=768
+            )
+            embed_model = OllamaEmbedding(model_name="nomic-embed-text")
+            index = VectorStoreIndex.from_vector_store(
+                vector_store, embed_model=embed_model
+            )
+            rag_retriever = index.as_retriever(similarity_top_k=5)
+        except Exception:
+            pass  # Gracefully fall back to non-RAG
+
     pipeline = ReportPipeline(
         report_type=report_type,
         sections=sections,
         client=client,
-        query_executor=query_executor
+        query_executor=query_executor,
+        rag_retriever=rag_retriever
     )
 
     try:

@@ -346,6 +346,9 @@ class LLMModule(PgAdminModule):
             # Design report streams
             'llm.database_design_report_stream',
             'llm.schema_design_report_stream',
+            # Metering reports (PowerDia — powerwd database)
+            'llm.database_metering_report',
+            'llm.database_metering_report_stream',
         ]
 
 
@@ -1911,6 +1914,127 @@ def generate_schema_design_report_stream(sid, did, scid):
         generator = generate_report_streaming(
             report_type='design',
             scope='schema',
+            conn=conn,
+            manager=manager,
+            context=context
+        )
+
+        return create_sse_response(generator)
+
+    except Exception as e:
+        return make_json_response(
+            success=0,
+            errormsg=str(e)
+        )
+
+
+# =============================================================================
+# PowerDia — Metering Report (database-scoped, targets powerwd tables)
+# =============================================================================
+
+@blueprint.route(
+    "/database-metering-report/<int:sid>/<int:did>",
+    methods=["GET"],
+    endpoint='database_metering_report'
+)
+@pga_login_required
+def generate_database_metering_report(sid, did):
+    """
+    Generate a PowerDia metering report (JSON) for the powerwd database.
+    """
+    from pgadmin.llm.utils import is_llm_enabled
+    from pgadmin.llm.reports.generator import generate_report
+    from pgadmin.utils.driver import get_driver
+
+    if not is_llm_enabled():
+        return make_json_response(
+            success=0,
+            errormsg=gettext(
+                'LLM is not configured. Please configure an LLM provider '
+                'in Preferences > AI.'
+            )
+        )
+
+    try:
+        driver = get_driver(config.PG_DEFAULT_DRIVER)
+        manager = driver.connection_manager(sid)
+        conn = manager.connection(did=did)
+
+        if not conn.connected():
+            return make_json_response(
+                success=0,
+                errormsg=gettext('Database is not connected.')
+            )
+
+        context = {'database_name': conn.db}
+        result = generate_report(
+            report_type='metering',
+            scope='database',
+            conn=conn,
+            manager=manager,
+            context=context
+        )
+
+        if result.get('success'):
+            return make_json_response(
+                data={'report': result.get('report', '')}
+            )
+        else:
+            return make_json_response(
+                success=0,
+                errormsg=result.get('error', 'Report generation failed')
+            )
+
+    except Exception as e:
+        return make_json_response(
+            success=0,
+            errormsg=gettext('Failed to generate report: ') + str(e)
+        )
+
+
+@blueprint.route(
+    "/database-metering-report/<int:sid>/<int:did>/stream",
+    methods=["GET"],
+    endpoint='database_metering_report_stream'
+)
+@pgCSRFProtect.exempt
+@pga_login_required
+def generate_database_metering_report_stream(sid, did):
+    """
+    Stream a PowerDia metering report via SSE for the powerwd database.
+    Queries: network_distribution, end_users, ref_transformer_types,
+             user_consumption.
+    """
+    from pgadmin.llm.utils import is_llm_enabled
+    from pgadmin.llm.reports.generator import (
+        generate_report_streaming, create_sse_response
+    )
+    from pgadmin.utils.driver import get_driver
+
+    if not is_llm_enabled():
+        return make_json_response(
+            success=0,
+            errormsg=gettext(
+                'LLM is not configured. Please configure an LLM provider '
+                'in Preferences > AI.'
+            )
+        )
+
+    try:
+        driver = get_driver(config.PG_DEFAULT_DRIVER)
+        manager = driver.connection_manager(sid)
+        conn = manager.connection(did=did)
+
+        if not conn.connected():
+            return make_json_response(
+                success=0,
+                errormsg=gettext('Database is not connected.')
+            )
+
+        context = {'database_name': conn.db}
+        generator = generate_report_streaming(
+            report_type='metering',
+            scope='database',
             conn=conn,
             manager=manager,
             context=context

@@ -308,6 +308,63 @@ DESIGN_SECTIONS = [
 ]
 
 # =============================================================================
+# METERING REPORT SECTIONS (PowerDia — powerwd database)
+# =============================================================================
+
+METERING_SECTIONS = [
+    Section(
+        id='grid_topology',
+        name='Grid Topology Overview',
+        description=(
+            'Count of substations, feeders, transformers, and end-users '
+            'in the powerwd network_distribution table.'
+        ),
+        queries=['metering_grid_topology', 'metering_end_user_count'],
+        scope=['database']
+    ),
+    Section(
+        id='transformer_load',
+        name='Transformer Load Analysis',
+        description=(
+            'Connected users per transformer vs rated capacity_kva. '
+            'Identifies overloaded (high users_per_kva) and underutilised units.'
+        ),
+        queries=['metering_transformer_load'],
+        scope=['database']
+    ),
+    Section(
+        id='consumption_patterns',
+        name='Consumption Patterns',
+        description=(
+            'Statistical summary of curr_reading_kwh values '
+            'and the top 20 highest-consuming end-users.'
+        ),
+        queries=['metering_consumption_summary', 'metering_top_consumers'],
+        scope=['database']
+    ),
+    Section(
+        id='grid_losses',
+        name='Grid Loss Estimation',
+        description=(
+            'Per-feeder total consumption to identify load imbalances '
+            'across the distribution network.'
+        ),
+        queries=['metering_feeder_consumption'],
+        scope=['database']
+    ),
+    Section(
+        id='spatial_density',
+        name='Spatial Density (PostGIS)',
+        description=(
+            'Per-substation user density and geographic centroids '
+            'derived from network_distribution.geom.'
+        ),
+        queries=['metering_spatial_density'],
+        scope=['database']
+    ),
+]
+
+# =============================================================================
 # SECTION LOOKUPS
 # =============================================================================
 
@@ -315,18 +372,21 @@ DESIGN_SECTIONS = [
 SECURITY_SECTIONS_DICT = {s.id: s for s in SECURITY_SECTIONS}
 PERFORMANCE_SECTIONS_DICT = {s.id: s for s in PERFORMANCE_SECTIONS}
 DESIGN_SECTIONS_DICT = {s.id: s for s in DESIGN_SECTIONS}
+METERING_SECTIONS_DICT = {s.id: s for s in METERING_SECTIONS}
 
 # Combined lookup by report type
 SECTIONS_BY_TYPE = {
     'security': SECURITY_SECTIONS,
     'performance': PERFORMANCE_SECTIONS,
     'design': DESIGN_SECTIONS,
+    'metering': METERING_SECTIONS,
 }
 
 SECTIONS_DICT_BY_TYPE = {
     'security': SECURITY_SECTIONS_DICT,
     'performance': PERFORMANCE_SECTIONS_DICT,
     'design': DESIGN_SECTIONS_DICT,
+    'metering': METERING_SECTIONS_DICT,
 }
 
 
