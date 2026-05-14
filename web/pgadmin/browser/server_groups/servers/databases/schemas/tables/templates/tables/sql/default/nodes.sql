@@ -9,6 +9,10 @@ FROM pg_catalog.pg_class rel
     LEFT OUTER JOIN pg_catalog.pg_description des ON (des.objoid=rel.oid AND des.objsubid=0 AND des.classoid='pg_class'::regclass)
     WHERE rel.relkind IN ('r','s','t','p') AND rel.relnamespace = {{ scid }}::oid
     AND NOT rel.relispartition
+    AND rel.relname NOT LIKE 'metering_knowledge%'
+    AND rel.relname NOT LIKE 'data_metering_knowledge%'
+    AND rel.relname NOT LIKE 'kb_%'
+    AND rel.relname NOT LIKE 'data_kb_%'
     {% if tid %} AND rel.oid = {{tid}}::OID {% endif %}
 {% if schema_diff %}
     AND CASE WHEN (SELECT COUNT(*) FROM pg_catalog.pg_depend
