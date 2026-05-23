@@ -585,7 +585,7 @@ export function MainToolBar({ containerRef, onFilterClick, onManageMacros, onAdd
             onClick={onRollbackClick} disabled={buttonsDisabled['rollback']} shortcut={queryToolPref.rollback_transaction} />
         </PgButtonGroup>
         <PgButtonGroup size="small">
-          <PgIconButton title={gettext('Macros')} icon={
+          <PgIconButton title={gettext('Queries')} icon={
             <><FormatListNumberedRoundedIcon /><KeyboardArrowDownIcon style={{ marginLeft: '-10px' }} /></>}
           disabled={!queryToolCtx.params.is_query_tool} name="menu-macros" ref={macrosMenuRef} onClick={toggleMenu} />
         </PgButtonGroup>
@@ -694,10 +694,10 @@ export function MainToolBar({ containerRef, onFilterClick, onManageMacros, onAdd
         anchorRef={macrosMenuRef}
         open={openMenuName == 'menu-macros'}
         onClose={onMenuClose}
-        label={gettext('Macros Menu')}
+        label={gettext('Queries Menu')}
       >
-        <PgMenuItem onClick={onManageMacros}>{gettext('Manage macros')}</PgMenuItem>
-        <PgMenuItem onClick={onAddToMacros}>{gettext('Add to macros')}</PgMenuItem>
+        <PgMenuItem onClick={onManageMacros}>{gettext('Manage queries')}</PgMenuItem>
+        <PgMenuItem onClick={onAddToMacros}>{gettext('Add to queries')}</PgMenuItem>
         <PgMenuDivider />
         {queryToolCtx.params?.macros?.map((m) => {
           return (

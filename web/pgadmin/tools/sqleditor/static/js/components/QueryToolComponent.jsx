@@ -883,7 +883,7 @@ export default function QueryToolComponent({ params, pgWindow, pgAdmin, selected
     const onClose = () => docker.current.close('manage-macros');
     docker.current.openDialog({
       id: 'manage-macros',
-      title: gettext('Manage Macros'),
+      title: gettext('Manage Queries'),
       content: <MacrosDialog onSave={(newMacros) => {
         setQtStatePartial((prev) => {
           return {

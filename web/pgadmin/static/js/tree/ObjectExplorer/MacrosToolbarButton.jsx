@@ -60,17 +60,17 @@ const MacrosToolbarButton = React.forwardRef(({ disabled, shortcut, ...props }, 
         <PgIconButton
           ref={ref}
           {...props}
-          title={gettext('Macros')}
+          title={gettext('Queries')}
           icon={<><FormatListNumberedRoundedIcon /><KeyboardArrowDownIcon style={{ marginLeft: '-10px' }} /></>}
           disabled={disabled}
           shortcut={shortcut}
           name="menu-macros"
         />
       }
-      label={gettext('Macros Menu')}
+      label={gettext('Queries Menu')}
     >
       {macros.length === 0 && (
-        <PgMenuItem disabled>{gettext('No macros defined')}</PgMenuItem>
+        <PgMenuItem disabled>{gettext('No queries defined')}</PgMenuItem>
       )}
       {macros.map((m) => (
         <PgMenuItem
