@@ -47,17 +47,24 @@ web/geckodriver.log
 web/regression/test_config.json
 web/regression/.coveragerc
 node_modules/
-web/pgAdmin/static/js/generated
-web/pgadmin/static/js/generated
 web/yarn-error.log
 web/commit_hash
 /web/cacert.pem
 auditjs.html
 auditpy.txt
 /venv/
+mastervenv/
+.pgadmin_dev/
 .scannerwork/
 web/coverage/
 web/.coverage
 web/regression/.coverage
 web/regression/covhtml/
 web/regression/htmlcov/
+web/pgadmin/static/js/generated/
+
+# Ignore internal developer notes and conversation logs
+*.md
+!README.md
+*.txt
+!requirements.txt

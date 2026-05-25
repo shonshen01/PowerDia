@@ -12,7 +12,7 @@
 ##########################################################################
 
 # Name of the application to display in the UI
-APP_NAME = 'pgAdmin 4'
+APP_NAME = 'PowerDia'
 APP_ICON = 'pg-icon'
 
 # To help define the configuration directory and data directory

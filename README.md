@@ -1,10 +1,11 @@
-# pgAdmin 4
+# PowerDia (based on pgAdmin 4)
 
-pgAdmin 4 is a rewrite of the popular pgAdmin3 management tool for the
-PostgreSQL (http://www.postgresql.org) database.
+PowerDia is an enhanced platform built on top of the popular pgAdmin 4 management tool for the PostgreSQL (http://www.postgresql.org) database. 
+
+**Note: Because PowerDia shares the same core architecture as pgAdmin 4, all of the installation, configuration, and bundling steps outlined in this README are exactly the same for PowerDia.**
 
 In the following documentation and examples, *$PGADMIN4_SRC/* is used to denote
-the top-level directory of a copy of the pgAdmin source tree, either from a
+the top-level directory of a copy of the PowerDia/pgAdmin source tree, either from a
 tarball or a git checkout.
 
 ## Architecture
@@ -89,14 +90,14 @@ simple - adapt as required for your distribution:
    packages:
 
    ```bash
-   (venv) $ PATH=$PATH:/usr/pgsql-18/bin pip install -r /home/powerdia/PowerDia-master/requirements.txt
+   (venv) $ PATH=$PATH:/usr/pgsql-18/bin pip install -r requirements.txt
    ```
 
    If you are planning to run the regression tests, you also need to install
    additional requirements from web/regression/requirements.txt:
 
    ```bash
-   (venv) $ pip install -r /home/powerdia/PowerDia-master/web/regression/requirements.txt
+   (venv) $ pip install -r web/regression/requirements.txt
    ```
 
 5. Create a local configuration file for pgAdmin. Edit
