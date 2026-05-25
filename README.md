@@ -4,6 +4,18 @@ PowerDia is an enhanced platform built on top of the popular pgAdmin 4 managemen
 
 **Note: Because PowerDia shares the same core architecture as pgAdmin 4, all of the installation, configuration, and bundling steps outlined in this README are exactly the same for PowerDia.**
 
+## Setting up the PowerWD Database
+This repository includes the schema and mock data for the **PowerWD** database. To set this up locally on your PostgreSQL server:
+
+1. Run the migration script to create the necessary roles (`grid_master`, `grid_analyst`, etc.), create the empty `powerwd` database, and install required extensions (like PostGIS):
+   ```bash
+   sudo -u postgres psql -f powerwd_rocky_migration.sql
+   ```
+2. Restore the sanitized mock data:
+   ```bash
+   sudo -u postgres psql -d powerwd -f powerwd_backup_clean.sql
+   ```
+
 In the following documentation and examples, *$PGADMIN4_SRC/* is used to denote
 the top-level directory of a copy of the PowerDia/pgAdmin source tree, either from a
 tarball or a git checkout.
